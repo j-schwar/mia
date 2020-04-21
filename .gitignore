@@ -1,0 +1,13 @@
+# Editors
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Build Targets
+**/Cargo.lock
+/target
+
+# Local Scratch
+/sratch
