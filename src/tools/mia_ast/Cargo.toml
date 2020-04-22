@@ -1,0 +1,9 @@
+[package]
+name = "mia_ast"
+authors = ["Jeremy Schwartz <j.schwartz564@icloud.com>"]
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+structopt = "0.3"
+mia_syntax = { path = "../../mia_syntax" }

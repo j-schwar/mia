@@ -1,6 +1,6 @@
 [package]
 name = "mia_syntax"
-author = ["Jeremy Schwartz <j.schwartz564@icloud.com"]
+author = ["Jeremy Schwartz <j.schwartz564@icloud.com>"]
 version = "0.0.1-alpha"
 edition = "2018"
 
@@ -8,5 +8,6 @@ edition = "2018"
 name = "mia_syntax"
 
 [dependencies]
+nom = "5.1"
 
 [dev-dependencies]
