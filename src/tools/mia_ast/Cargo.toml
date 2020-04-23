@@ -1,5 +1,5 @@
 [package]
-name = "mia_ast"
+name = "mia-ast"
 authors = ["Jeremy Schwartz <j.schwartz564@icloud.com>"]
 version = "0.1.0"
 edition = "2018"

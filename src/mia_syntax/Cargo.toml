@@ -1,6 +1,6 @@
 [package]
 name = "mia_syntax"
-author = ["Jeremy Schwartz <j.schwartz564@icloud.com>"]
+authors = ["Jeremy Schwartz <j.schwartz564@icloud.com>"]
 version = "0.0.1-alpha"
 edition = "2018"
 

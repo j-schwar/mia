@@ -2,13 +2,11 @@
 //!
 //! Takes some source text and constructs an AST from it.
 
-#![allow(dead_code)] // TODO: Remove
-
 use crate::ast::*;
 use nom::bytes::complete::{take_while, take_while1};
+use nom::combinator::all_consuming;
 use nom::multi::many0;
 pub use nom::IResult;
-use nom::combinator::all_consuming;
 
 /// Parses a whole translation unit.
 pub fn parse(i: &str) -> IResult<&str, TranslationUnit> {
@@ -724,7 +722,8 @@ mod func {
 				a = 1;
 				foo(a, b);
 			}",
-			).unwrap();
+			)
+			.unwrap();
 
 			let s1 = Statement::Define {
 				ident: Ident::from("a"),

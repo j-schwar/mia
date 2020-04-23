@@ -1,5 +1,18 @@
 //! This module defines the Abstract Syntax Tree for the Mia language.
 
+use crate::ast::visit::{MutVisitor, Transformer};
+
+pub mod pass;
+pub mod visit;
+
+pub trait Ast {
+	/// Applies a `MutVisitor` to this node.
+	fn mut_visit<V: MutVisitor>(&mut self, v: &mut V);
+
+	/// Applies a `Transformer` to this node.
+	fn transform<T: Transformer>(self, t: &mut T) -> Self;
+}
+
 /// An identifier used to uniquely name variables, functions, and types.
 ///
 /// Valid identifiers must match the following regular expression:
@@ -27,6 +40,16 @@ impl From<String> for Ident {
 impl From<&str> for Ident {
 	fn from(name: &str) -> Self {
 		Ident::new(name.to_string())
+	}
+}
+
+impl Ast for Ident {
+	fn mut_visit<V: MutVisitor>(&mut self, v: &mut V) {
+		v.visit_ident(self);
+	}
+
+	fn transform<T: Transformer>(self, t: &mut T) -> Self {
+		t.transform_ident(self)
 	}
 }
 
@@ -70,6 +93,16 @@ impl TypeValue {
 	}
 }
 
+impl Ast for TypeValue {
+	fn mut_visit<V: MutVisitor>(&mut self, v: &mut V) {
+		v.visit_type_value(self);
+	}
+
+	fn transform<T: Transformer>(self, t: &mut T) -> Self {
+		t.transform_type_value(self)
+	}
+}
+
 /// Types of indirection for a type identifier.
 #[derive(Debug, Eq, PartialEq)]
 pub enum TypeIndirection {
@@ -82,6 +115,16 @@ pub enum TypeIndirection {
 #[derive(Debug, Eq, PartialEq)]
 pub enum Literal {
 	Int { value: u64 },
+}
+
+impl Ast for Literal {
+	fn mut_visit<V: MutVisitor>(&mut self, v: &mut V) {
+		v.visit_literal(self);
+	}
+
+	fn transform<T: Transformer>(self, t: &mut T) -> Self {
+		t.transform_literal(self)
+	}
 }
 
 /// Operators for infix expressions.
@@ -164,6 +207,16 @@ pub enum Expression {
 	Group(Box<Expression>),
 }
 
+impl Ast for Expression {
+	fn mut_visit<V: MutVisitor>(&mut self, v: &mut V) {
+		v.visit_expression(self);
+	}
+
+	fn transform<T: Transformer>(self, t: &mut T) -> Self {
+		t.transform_expression(self)
+	}
+}
+
 /// An imperative statement.
 #[derive(Debug, Eq, PartialEq)]
 pub enum Statement {
@@ -190,6 +243,16 @@ pub enum Statement {
 	Assign { ident: Ident, value: Expression },
 }
 
+impl Ast for Statement {
+	fn mut_visit<V: MutVisitor>(&mut self, v: &mut V) {
+		v.visit_statement(self);
+	}
+
+	fn transform<T: Transformer>(self, t: &mut T) -> Self {
+		t.transform_statement(self)
+	}
+}
+
 /// A block of consecutive statements.
 #[derive(Debug, Eq, PartialEq)]
 pub struct CodeBlock {
@@ -204,6 +267,16 @@ impl CodeBlock {
 	/// An iterator over the statements in this code block.
 	pub fn iter(&self) -> impl Iterator<Item = &Statement> {
 		self.statements.iter()
+	}
+}
+
+impl Ast for CodeBlock {
+	fn mut_visit<V: MutVisitor>(&mut self, v: &mut V) {
+		v.visit_code_block(self);
+	}
+
+	fn transform<T: Transformer>(self, t: &mut T) -> Self {
+		t.transform_code_block(self)
 	}
 }
 
@@ -223,11 +296,31 @@ impl Parameter {
 	}
 }
 
+impl Ast for Parameter {
+	fn mut_visit<V: MutVisitor>(&mut self, v: &mut V) {
+		v.visit_parameter(self);
+	}
+
+	fn transform<T: Transformer>(self, t: &mut T) -> Self {
+		t.transform_parameter(self)
+	}
+}
+
 /// The body of a function definition.
 #[derive(Debug, Eq, PartialEq)]
 pub enum FunctionBody {
 	Expr(Expression),
 	Block(CodeBlock),
+}
+
+impl Ast for FunctionBody {
+	fn mut_visit<V: MutVisitor>(&mut self, v: &mut V) {
+		v.visit_function_body(self);
+	}
+
+	fn transform<T: Transformer>(self, t: &mut T) -> Self {
+		t.transform_function_body(self)
+	}
 }
 
 /// A function definition.
@@ -260,9 +353,29 @@ impl FunctionDefinition {
 	}
 }
 
+impl Ast for FunctionDefinition {
+	fn mut_visit<V: MutVisitor>(&mut self, v: &mut V) {
+		v.visit_function_definition(self);
+	}
+
+	fn transform<T: Transformer>(self, t: &mut T) -> Self {
+		t.transform_function_definition(self)
+	}
+}
+
 /// Top-level AST node for a file.
 #[derive(Debug, Eq, PartialEq)]
 pub struct TranslationUnit {
 	/// A list of functions defined in this unit.
 	pub functions: Vec<FunctionDefinition>,
+}
+
+impl Ast for TranslationUnit {
+	fn mut_visit<V: MutVisitor>(&mut self, v: &mut V) {
+		v.visit_translation_unit(self);
+	}
+
+	fn transform<T: Transformer>(self, t: &mut T) -> Self {
+		t.transform_translation_unit(self)
+	}
 }
