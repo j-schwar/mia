@@ -3,7 +3,6 @@ use id_arena::Id;
 use super::scope::ScopeId;
 use super::type_value::TypeId;
 use super::value::ValueId;
-use super::Context;
 
 /// Holds type/value information about a function definition along with its
 /// scope.
@@ -34,7 +33,7 @@ impl Function {
 		S: Into<String>,
 	{
 		Function {
-			name,
+			name: name.into(),
 			parameters,
 			return_type,
 			scope,

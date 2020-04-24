@@ -106,7 +106,7 @@ impl<'ctx> Builder<'ctx> {
 	///
 	/// * The builder's active scope is not allocated in it's context
 	///
-	pub fn active_scope(&mut self) -> &'ctx mut Scope {
+	pub fn active_scope(&mut self) -> &mut Scope {
 		let id = self.active_scope_id();
 		self.context
 			.get_scope_mut(id)

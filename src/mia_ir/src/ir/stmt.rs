@@ -2,7 +2,7 @@ use super::func::FunctionId;
 use super::scope::ScopeId;
 use super::value::ValueId;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Statement {
 	pub assignee: ValueId,
 	pub kind: StatementKind,
@@ -55,7 +55,7 @@ impl Statement {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum StatementKind {
 	Call {
 		function: FunctionId,
@@ -80,11 +80,13 @@ pub enum StatementKind {
 	},
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum UnaryOperation {
 	Not, // !
 	Neg, // -
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub enum BinaryOperation {
 	/* Arithmetical Operations */
 	Add, // +
