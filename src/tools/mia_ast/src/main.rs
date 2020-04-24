@@ -1,8 +1,8 @@
 //! `mia-ast` is a simple debug executable which takes some Mia source code,
 //! parses it, then prints the resultant AST to stdout or some specified file.
 
-use mia_syntax::ast::pass::RemoveGroups;
-use mia_syntax::ast::{Ast, TranslationUnit};
+use mia_syntax::ast::pass;
+use mia_syntax::ast::TranslationUnit;
 use std::process::exit;
 use std::str::FromStr;
 use structopt::StructOpt;
@@ -66,8 +66,7 @@ fn run_passes(opt: &Opt, ast: TranslationUnit) -> TranslationUnit {
 	let do_pass = |pass: Pass| passes.contains(&Pass::All) || passes.contains(&pass);
 
 	let ast = if do_pass(Pass::RemoveGroups) {
-		let mut pass = RemoveGroups;
-		ast.transform(&mut pass)
+		pass::remove_groups(ast)
 	} else {
 		ast
 	};
