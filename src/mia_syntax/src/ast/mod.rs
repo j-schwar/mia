@@ -20,7 +20,7 @@ pub trait Ast {
 /// ```text
 /// [_a-zA-Z][_a-zA-Z0-9]*
 /// ```
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Ident {
 	pub name: String,
 }
@@ -61,7 +61,7 @@ impl Ast for Ident {
 /// ```text
 /// type-value ::= [ "&" | "*" ] [ "mut" ] identifier ;
 /// ```
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TypeValue {
 	pub name: Ident,
 	pub indirection: TypeIndirection,
@@ -104,7 +104,7 @@ impl Ast for TypeValue {
 }
 
 /// Types of indirection for a type identifier.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum TypeIndirection {
 	Pointer,
 	Reference,
@@ -112,7 +112,7 @@ pub enum TypeIndirection {
 }
 
 /// A literal expression.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Literal {
 	Int { value: u64 },
 }
@@ -128,7 +128,7 @@ impl Ast for Literal {
 }
 
 /// Operators for infix expressions.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum InfixOperator {
 	// Arithmetic Operators
 	Add, // '+'
@@ -151,14 +151,14 @@ pub enum InfixOperator {
 }
 
 /// Operators for prefix expressions.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum PrefixOperator {
 	Neg, // '-'
 	Not, // '!'
 }
 
 /// An expression defines some in-memory computation.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Expression {
 	/// A basic expression consisting of just the use of a variable.
 	Variable(Ident),
@@ -218,7 +218,7 @@ impl Ast for Expression {
 }
 
 /// An imperative statement.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Statement {
 	/// Just an expression.
 	Expr(Expression),
@@ -254,7 +254,7 @@ impl Ast for Statement {
 }
 
 /// A block of consecutive statements.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CodeBlock {
 	pub statements: Vec<Statement>,
 }
@@ -281,7 +281,7 @@ impl Ast for CodeBlock {
 }
 
 /// A parameter for a function definition.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Parameter {
 	pub ident: Ident,
 	pub type_value: Option<TypeValue>,
@@ -307,7 +307,7 @@ impl Ast for Parameter {
 }
 
 /// The body of a function definition.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum FunctionBody {
 	Expr(Expression),
 	Block(CodeBlock),
@@ -324,7 +324,7 @@ impl Ast for FunctionBody {
 }
 
 /// A function definition.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct FunctionDefinition {
 	pub ident: Ident,
 	pub parameters: Vec<Parameter>,
@@ -364,7 +364,7 @@ impl Ast for FunctionDefinition {
 }
 
 /// Top-level AST node for a file.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TranslationUnit {
 	/// A list of functions defined in this unit.
 	pub functions: Vec<FunctionDefinition>,

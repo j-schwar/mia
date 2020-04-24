@@ -5,8 +5,9 @@ rust:
   - nightly
   - beta
 
-cache: cargo
-
 script:
-  - cargo build --verbose --all
-  - cargo test --verbose --all
+  - cargo build --verbose --workspace
+  - cargo test --verbose --workspace
+
+notifications:
+  email: false
