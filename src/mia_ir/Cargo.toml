@@ -1,0 +1,14 @@
+[package]
+name = "mia_ir"
+authors = ["Jeremy Schwartz <j.schwartz564@icloud.com>"]
+version = "0.0.1-alpha"
+edition = "2018"
+
+[lib]
+name = "mia_ir"
+
+[dependencies]
+mia_syntax = { path = "../mia_syntax" }
+id-arena = "2.0"
+
+[dev-dependencies]
