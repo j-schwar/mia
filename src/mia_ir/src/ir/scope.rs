@@ -2,6 +2,8 @@ use super::stmt::Statement;
 use super::type_value::*;
 use super::value::*;
 use id_arena::{Arena, Id};
+use std::borrow::Borrow;
+use crate::ir::Context;
 
 /// Holds IR code for a scope.
 #[derive(Debug, Eq, PartialEq)]
@@ -49,6 +51,28 @@ impl Scope {
 		self.type_arena.iter().find(|(_, item)| predicate(item))
 	}
 
+	/// Recursively searches through this and above scopes for the first type
+	/// which satisfies `predicate`.
+	///
+	/// ## Panics
+	///
+	/// Panics if any of the scopes that dominate this one are not allocated in
+	/// `context`.
+	pub fn lookup_type<'ctx, P>(&'ctx self, context: &'ctx Context, predicate: P) -> Option<(TypeId, &'ctx Type)>
+	where
+		P: Fn(&Type) -> bool + Clone,
+	{
+		let local = self.find_type(predicate.clone());
+		if local.is_some() || self.parent.is_none() {
+			local
+		} else {
+			let parent = context
+				.get_scope(self.parent.unwrap())
+				.expect("scope is allocated in different context");
+			parent.lookup_type(context, predicate)
+		}
+	}
+
 	/// Allocates a new type in this scope.
 	pub fn alloc_type(&mut self, t: Type) -> TypeId {
 		self.type_arena.alloc(t)
@@ -73,6 +97,56 @@ impl Scope {
 		self.value_arena.iter().find(|(_, item)| predicate(item))
 	}
 
+	/// Recursively searches through this and above scopes for the first value
+	/// which satisfies `predicate`.
+	///
+	/// ## Panics
+	///
+	/// Panics if any of the scopes that dominate this one are not allocated in
+	/// `context`.
+	pub fn lookup_value<'ctx, P>(&'ctx self, context: &'ctx Context, predicate: P) -> Option<(ValueId, &'ctx Value)>
+		where
+			P: Fn(&Value) -> bool + Clone,
+	{
+		let local = self.find_value(predicate.clone());
+		if local.is_some() || self.parent.is_none() {
+			local
+		} else {
+			let parent = context
+				.get_scope(self.parent.unwrap())
+				.expect("scope is allocated in different context");
+			parent.lookup_value(context, predicate)
+		}
+	}
+
+	/// Searches for and returns the first value in this scope with a given name.
+	pub fn find_value_with_name<S>(&self, name: S) -> Option<(ValueId, &Value)>
+	where
+		S: Borrow<String>
+	{
+		self.find_value(|v| match v {
+			Value::Named { name: n, .. } => n == name.borrow(),
+			_ => false,
+		})
+	}
+
+	/// Recursively searches through this and above scopes for the first value
+	/// with a given name.
+	///
+	/// ## Panics
+	///
+	/// Panics if any of the scopes that dominate this one are not allocated in
+	/// `context`.
+	pub fn lookup_value_with_name<'ctx, S>(&'ctx self, context: &'ctx Context, name: S) -> Option<(ValueId, &'ctx Value)>
+	where
+		S: Borrow<String>
+	{
+		self.lookup_value(context, |v| match v {
+			Value::Named { name: n, .. } => n == name.borrow(),
+			_ => false,
+		})
+	}
+
 	/// Allocates a new value in this scope.
 	pub fn alloc_value(&mut self, v: Value) -> ValueId {
 		self.value_arena.alloc(v)
@@ -86,3 +160,23 @@ impl Scope {
 }
 
 pub type ScopeId = Id<Scope>;
+
+#[cfg(test)]
+mod test {
+	use super::*;
+
+	#[test]
+	fn test_type_lookup() {
+		let mut context = Context::new();
+		let s1 = context.alloc_scope(Scope::new(None));
+		let s2 = context.alloc_scope(Scope::new(Some(s1)));
+
+		let t1 = context.get_scope_mut(s1).unwrap().alloc_type(Type::new("i32".to_string()));
+		let (t2, _) = context.get_scope(s2).unwrap().lookup_type(&context, |t| match t {
+			Type::Simple { name, .. } => name == "i32",
+			_ => false,
+		}).expect("failed to lookup type");
+
+		assert_eq!(t1, t2);
+	}
+}
