@@ -11,3 +11,12 @@ script:
 
 notifications:
   email: false
+
+jobs:
+  include:
+    - name: fmt-check
+      if: type = pull_request
+      before_script:
+        - rustup component add rustfmt
+      script:
+        - cargo fmt --all -- --check
