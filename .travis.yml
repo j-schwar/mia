@@ -11,3 +11,10 @@ script:
 
 notifications:
   email: false
+
+jobs:
+  include:
+    - name: fmt-check
+      if: type = pull_request
+      script:
+        - cargo fmt --all -- --check
