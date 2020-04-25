@@ -10,10 +10,10 @@ use id_arena::Arena;
 
 pub use func::*;
 pub use scope::*;
+use std::borrow::Borrow;
 pub use stmt::*;
 pub use type_value::*;
 pub use value::*;
-use std::borrow::Borrow;
 
 /// IR context holds top-level information about a translation unit including
 /// a list of defined functions and the allocated for scopes.
@@ -65,7 +65,7 @@ impl Context {
 	/// given predicate.
 	pub fn find_function<P>(&self, predicate: P) -> Option<(FunctionId, &Function)>
 	where
-		P: Fn(&Function) -> bool
+		P: Fn(&Function) -> bool,
 	{
 		self.function_arena.iter().find(|(_, f)| predicate(f))
 	}
@@ -73,7 +73,7 @@ impl Context {
 	/// Returns the id and reference to the first function with a given name.
 	pub fn find_function_with_name<S>(&self, name: S) -> Option<(FunctionId, &Function)>
 	where
-		S: Borrow<String>
+		S: Borrow<String>,
 	{
 		self.find_function(|f| f.name.eq(name.borrow()))
 	}

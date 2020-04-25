@@ -1,9 +1,9 @@
 use super::stmt::Statement;
 use super::type_value::*;
 use super::value::*;
+use crate::ir::Context;
 use id_arena::{Arena, Id};
 use std::borrow::Borrow;
-use crate::ir::Context;
 
 /// Holds IR code for a scope.
 #[derive(Debug, Eq, PartialEq)]
@@ -58,7 +58,11 @@ impl Scope {
 	///
 	/// Panics if any of the scopes that dominate this one are not allocated in
 	/// `context`.
-	pub fn lookup_type<'ctx, P>(&'ctx self, context: &'ctx Context, predicate: P) -> Option<(TypeId, &'ctx Type)>
+	pub fn lookup_type<'ctx, P>(
+		&'ctx self,
+		context: &'ctx Context,
+		predicate: P,
+	) -> Option<(TypeId, &'ctx Type)>
 	where
 		P: Fn(&Type) -> bool + Clone,
 	{
@@ -104,9 +108,13 @@ impl Scope {
 	///
 	/// Panics if any of the scopes that dominate this one are not allocated in
 	/// `context`.
-	pub fn lookup_value<'ctx, P>(&'ctx self, context: &'ctx Context, predicate: P) -> Option<(ValueId, &'ctx Value)>
-		where
-			P: Fn(&Value) -> bool + Clone,
+	pub fn lookup_value<'ctx, P>(
+		&'ctx self,
+		context: &'ctx Context,
+		predicate: P,
+	) -> Option<(ValueId, &'ctx Value)>
+	where
+		P: Fn(&Value) -> bool + Clone,
 	{
 		let local = self.find_value(predicate.clone());
 		if local.is_some() || self.parent.is_none() {
@@ -122,7 +130,7 @@ impl Scope {
 	/// Searches for and returns the first value in this scope with a given name.
 	pub fn find_value_with_name<S>(&self, name: S) -> Option<(ValueId, &Value)>
 	where
-		S: Borrow<String>
+		S: Borrow<String>,
 	{
 		self.find_value(|v| match v {
 			Value::Named { name: n, .. } => n == name.borrow(),
@@ -137,9 +145,13 @@ impl Scope {
 	///
 	/// Panics if any of the scopes that dominate this one are not allocated in
 	/// `context`.
-	pub fn lookup_value_with_name<'ctx, S>(&'ctx self, context: &'ctx Context, name: S) -> Option<(ValueId, &'ctx Value)>
+	pub fn lookup_value_with_name<'ctx, S>(
+		&'ctx self,
+		context: &'ctx Context,
+		name: S,
+	) -> Option<(ValueId, &'ctx Value)>
 	where
-		S: Borrow<String>
+		S: Borrow<String>,
 	{
 		self.lookup_value(context, |v| match v {
 			Value::Named { name: n, .. } => n == name.borrow(),
@@ -171,11 +183,18 @@ mod test {
 		let s1 = context.alloc_scope(Scope::new(None));
 		let s2 = context.alloc_scope(Scope::new(Some(s1)));
 
-		let t1 = context.get_scope_mut(s1).unwrap().alloc_type(Type::new("i32".to_string()));
-		let (t2, _) = context.get_scope(s2).unwrap().lookup_type(&context, |t| match t {
-			Type::Simple { name, .. } => name == "i32",
-			_ => false,
-		}).expect("failed to lookup type");
+		let t1 = context
+			.get_scope_mut(s1)
+			.unwrap()
+			.alloc_type(Type::new("i32".to_string()));
+		let (t2, _) = context
+			.get_scope(s2)
+			.unwrap()
+			.lookup_type(&context, |t| match t {
+				Type::Simple { name, .. } => name == "i32",
+				_ => false,
+			})
+			.expect("failed to lookup type");
 
 		assert_eq!(t1, t2);
 	}
