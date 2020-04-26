@@ -17,6 +17,17 @@ pub use stmt::*;
 pub use type_value::*;
 pub use value::*;
 
+const BUILTIN_TYPE_NAMES: [&'static str; 8] = [
+	"i8",
+	"i16",
+	"i32",
+	"i64",
+	"u8",
+	"u16",
+	"u32",
+	"u64",
+];
+
 /// IR context holds top-level information about a translation unit including
 /// a list of defined functions and the allocated for scopes.
 pub struct Context {
@@ -28,11 +39,18 @@ pub struct Context {
 impl Context {
 	/// Constructs a new context.
 	pub fn new() -> Self {
-		Context {
+		let mut context = Context {
 			scope_arena: Arena::new(),
 			function_arena: Arena::new(),
 			type_arena: Arena::new(),
+		};
+
+		// Populate context's type-space with builtin types.
+		for type_name in &BUILTIN_TYPE_NAMES {
+			context.type_arena.alloc(Type::new(type_name.to_string()));
 		}
+
+		return context;
 	}
 
 	/// Constructs a new builder for this context.
