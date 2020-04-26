@@ -17,16 +17,8 @@ pub use stmt::*;
 pub use type_value::*;
 pub use value::*;
 
-const BUILTIN_TYPE_NAMES: [&'static str; 8] = [
-	"i8",
-	"i16",
-	"i32",
-	"i64",
-	"u8",
-	"u16",
-	"u32",
-	"u64",
-];
+const BUILTIN_TYPE_NAMES: [&'static str; 8] =
+	["i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64"];
 
 /// IR context holds top-level information about a translation unit including
 /// a list of defined functions and the allocated for scopes.

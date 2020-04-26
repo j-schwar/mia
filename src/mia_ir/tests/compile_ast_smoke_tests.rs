@@ -4,8 +4,8 @@
 
 extern crate mia_ir;
 
-use mia_syntax as syntax;
 use mia_ir::ir;
+use mia_syntax as syntax;
 
 /// Parses `source` and invokes the `compile_ast` function on the result.
 ///
