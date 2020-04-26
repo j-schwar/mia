@@ -1,6 +1,7 @@
 use super::func::FunctionId;
 use super::scope::ScopeId;
 use super::value::ValueId;
+use mia_syntax::ast::{InfixOperator, PrefixOperator};
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct Statement {
@@ -86,6 +87,17 @@ pub enum UnaryOperation {
 	Neg, // -
 }
 
+impl From<PrefixOperator> for UnaryOperation {
+	/// Translates an `ast::PrefixOperator` into an IR `UnaryOperator`.
+	fn from(op: PrefixOperator) -> Self {
+		use PrefixOperator::*;
+		match op {
+			Neg => UnaryOperation::Neg,
+			Not => UnaryOperation::Not,
+		}
+	}
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum BinaryOperation {
 	/* Arithmetical Operations */
@@ -104,4 +116,26 @@ pub enum BinaryOperation {
 	Le,  // <=
 	Gt,  // >
 	Ge,  // >=
+}
+
+impl From<InfixOperator> for BinaryOperation {
+	/// Translates an `ast::InfixOperator` into an IR `BinaryOperator`.
+	fn from(op: InfixOperator) -> Self {
+		use InfixOperator::*;
+		match op {
+			Add => BinaryOperation::Add,
+			Sub => BinaryOperation::Sub,
+			Mul => BinaryOperation::Mul,
+			Div => BinaryOperation::Div,
+			Mod => BinaryOperation::Mod,
+			Eq => BinaryOperation::Eq,
+			Ne => BinaryOperation::Ne,
+			And => BinaryOperation::And,
+			Or => BinaryOperation::Or,
+			Lt => BinaryOperation::Lt,
+			Le => BinaryOperation::Le,
+			Gt => BinaryOperation::Gt,
+			Ge => BinaryOperation::Ge,
+		}
+	}
 }
