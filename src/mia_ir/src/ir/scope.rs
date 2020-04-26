@@ -1,5 +1,4 @@
 use super::stmt::Statement;
-use super::type_value::*;
 use super::value::*;
 use crate::ir::Context;
 use id_arena::{Arena, Id};
