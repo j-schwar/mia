@@ -17,7 +17,6 @@ pub struct Scope {
 	/// The sequence of statements describing the logic of this scope.
 	pub statements: Vec<Statement>,
 
-	type_arena: Arena<Type>,
 	value_arena: Arena<Value>,
 }
 
@@ -27,59 +26,8 @@ impl Scope {
 		Scope {
 			parent,
 			statements: Vec::new(),
-			type_arena: Arena::new(),
 			value_arena: Arena::new(),
 		}
-	}
-
-	/// Retrieves the type with a given `id` in this scope.
-	pub fn get_type(&self, id: TypeId) -> Option<&Type> {
-		self.type_arena.get(id)
-	}
-
-	/// Retrieves a mutable reference to the type with a given `id`.
-	pub fn get_type_mut(&mut self, id: TypeId) -> Option<&mut Type> {
-		self.type_arena.get_mut(id)
-	}
-
-	/// Searches for and returns the first type in this scope which satisfies a
-	/// given predicate.
-	pub fn find_type<P>(&self, predicate: P) -> Option<(TypeId, &Type)>
-	where
-		P: Fn(&Type) -> bool,
-	{
-		self.type_arena.iter().find(|(_, item)| predicate(item))
-	}
-
-	/// Recursively searches through this and above scopes for the first type
-	/// which satisfies `predicate`.
-	///
-	/// ## Panics
-	///
-	/// Panics if any of the scopes that dominate this one are not allocated in
-	/// `context`.
-	pub fn lookup_type<'ctx, P>(
-		&'ctx self,
-		context: &'ctx Context,
-		predicate: P,
-	) -> Option<(TypeId, &'ctx Type)>
-	where
-		P: Fn(&Type) -> bool + Clone,
-	{
-		let local = self.find_type(predicate.clone());
-		if local.is_some() || self.parent.is_none() {
-			local
-		} else {
-			let parent = context
-				.get_scope(self.parent.unwrap())
-				.expect("scope is allocated in different context");
-			parent.lookup_type(context, predicate)
-		}
-	}
-
-	/// Allocates a new type in this scope.
-	pub fn alloc_type(&mut self, t: Type) -> TypeId {
-		self.type_arena.alloc(t)
 	}
 
 	/// Retrieves the value with a given `id` in this scope.
@@ -178,24 +126,22 @@ mod test {
 	use super::*;
 
 	#[test]
-	fn test_type_lookup() {
+	fn test_value_lookup() {
 		let mut context = Context::new();
 		let s1 = context.alloc_scope(Scope::new(None));
 		let s2 = context.alloc_scope(Scope::new(Some(s1)));
 
-		let t1 = context
-			.get_scope_mut(s1)
-			.unwrap()
-			.alloc_type(Type::new("i32".to_string()));
-		let (t2, _) = context
+		let v1 = context.get_scope_mut(s1).unwrap().alloc_value(Value::new(
+			"a".to_string(),
+			None,
+			false,
+		));
+		let (v2, _) = context
 			.get_scope(s2)
 			.unwrap()
-			.lookup_type(&context, |t| match t {
-				Type::Simple { name, .. } => name == "i32",
-				_ => false,
-			})
-			.expect("failed to lookup type");
+			.lookup_value_with_name(&context, &String::from("a"))
+			.expect("failed to lookup value");
 
-		assert_eq!(t1, t2);
+		assert_eq!(v1, v2);
 	}
 }

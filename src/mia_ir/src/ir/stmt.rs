@@ -54,6 +54,13 @@ impl Statement {
 			},
 		}
 	}
+
+	pub fn new_alias(assignee: ValueId, value: ValueId) -> Self {
+		Statement {
+			assignee,
+			kind: StatementKind::Alias { value },
+		}
+	}
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -78,6 +85,10 @@ pub enum StatementKind {
 		condition: ValueId,
 		true_scope: ScopeId,
 		false_scope: ScopeId,
+	},
+
+	Alias {
+		value: ValueId,
 	},
 }
 

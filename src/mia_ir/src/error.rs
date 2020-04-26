@@ -14,6 +14,7 @@ pub enum NamingError {
 	UseOfKeywordAsName(String),
 	UseOfUndefinedFunction(String),
 	UseOfUndefinedVariable(String),
+	UseOfUndefinedType(String),
 }
 
 impl Display for NamingError {
@@ -25,6 +26,7 @@ impl Display for NamingError {
 			UseOfKeywordAsName(s) => write!(f, "'{}' is a keyword and cannot be used as a name", s),
 			UseOfUndefinedFunction(s) => write!(f, "use of undefined function: '{}'", s),
 			UseOfUndefinedVariable(s) => write!(f, "use of undefined variable: '{}'", s),
+			UseOfUndefinedType(s) => write!(f, "use of undefined type: '{}'", s),
 		}
 	}
 }

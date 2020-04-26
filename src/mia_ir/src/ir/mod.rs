@@ -22,6 +22,7 @@ pub use value::*;
 pub struct Context {
 	scope_arena: Arena<Scope>,
 	function_arena: Arena<Function>,
+	type_arena: Arena<Type>,
 }
 
 impl Context {
@@ -30,6 +31,7 @@ impl Context {
 		Context {
 			scope_arena: Arena::new(),
 			function_arena: Arena::new(),
+			type_arena: Arena::new(),
 		}
 	}
 
@@ -43,11 +45,6 @@ impl Context {
 		self.scope_arena.alloc(s)
 	}
 
-	/// Allocates a function in this context.
-	pub fn alloc_function(&mut self, f: Function) -> FunctionId {
-		self.function_arena.alloc(f)
-	}
-
 	/// Retrieves the scope with a given id.
 	pub fn get_scope(&self, id: ScopeId) -> Option<&Scope> {
 		self.scope_arena.get(id)
@@ -56,6 +53,11 @@ impl Context {
 	/// Retrieves the scope with a given id.
 	pub fn get_scope_mut(&mut self, id: ScopeId) -> Option<&mut Scope> {
 		self.scope_arena.get_mut(id)
+	}
+
+	/// Allocates a function in this context.
+	pub fn alloc_function(&mut self, f: Function) -> FunctionId {
+		self.function_arena.alloc(f)
 	}
 
 	/// Retries the function with a given id.
@@ -78,6 +80,30 @@ impl Context {
 		S: Borrow<String>,
 	{
 		self.find_function(|f| f.name.eq(name.borrow()))
+	}
+
+	/// Allocates a new type in this context.
+	pub fn alloc_type(&mut self, t: Type) -> TypeId {
+		self.type_arena.alloc(t)
+	}
+
+	/// Retrieves the type with a given `id` in this context.
+	pub fn get_type(&self, id: TypeId) -> Option<&Type> {
+		self.type_arena.get(id)
+	}
+
+	/// Retrieves a mutable reference to the type with a given `id`.
+	pub fn get_type_mut(&mut self, id: TypeId) -> Option<&mut Type> {
+		self.type_arena.get_mut(id)
+	}
+
+	/// Searches for and returns the first type in this context which satisfies a
+	/// given predicate.
+	pub fn find_type<P>(&self, predicate: P) -> Option<(TypeId, &Type)>
+	where
+		P: Fn(&Type) -> bool,
+	{
+		self.type_arena.iter().find(|(_, item)| predicate(item))
 	}
 }
 
@@ -197,7 +223,9 @@ impl<'ctx> Builder<'ctx> {
 	///
 	/// Always returns `assignee`.
 	pub fn build_alias(&mut self, assignee: ValueId, value: ValueId) -> ValueId {
-		unimplemented!()
+		let alias = Statement::new_alias(assignee, value);
+		self.active_scope().statements.push(alias);
+		return assignee;
 	}
 
 	/// Constructs a `Call` statement.
@@ -363,28 +391,12 @@ impl<'ctx> Builder<'ctx> {
 		self.context.find_function_with_name(name)
 	}
 
-	/// Recursively searches the active scope and all above scopes returning the
-	/// first type which satisfies `predicate`.
-	///
-	/// ## Panics
-	///
-	/// This method panics if any of the following conditions are true:
-	///
-	/// * There is no active scope
-	///
-	/// * The active scope, or any of its ancestors are not allocated in this
-	/// builder's context
-	///
-	pub fn lookup_type<P>(&self, predicate: P) -> Option<(TypeId, &Type)>
+	/// Returns the first type which satisfies `predicate`.
+	pub fn find_type<P>(&self, predicate: P) -> Option<(TypeId, &Type)>
 	where
-		P: Fn(&Type) -> bool + Clone,
+		P: Fn(&Type) -> bool,
 	{
-		let scope_id = self.active_scope_id();
-		let scope = self
-			.context
-			.get_scope(scope_id)
-			.expect("scope allocated in different context");
-		scope.lookup_type(self.context, predicate)
+		self.context.find_type(predicate)
 	}
 
 	/// Recursively searches the active scope and all above scopes returning the
@@ -719,14 +731,22 @@ impl<'ctx> AstCompiler<'ctx> {
 		}
 	}
 
-	/// Looks for an IR type which matches `type_value` in the active scope.
-	///
-	/// If unable to find the base type name, an error is returned. If the type
-	/// name was found but there is not an exact match (e.g., we found `i32` but
-	/// need `&i32`) the exact type is created in the active scope and its id is
-	/// returned.
+	/// Looks for an IR type which matches `type_value` in the current context.
 	fn resolve_type_value(&mut self, type_value: ast::TypeValue) -> Result<TypeId> {
-		// TODO: Move type arena from Scope to Context
-		unimplemented!()
+		use ast::TypeIndirection::*;
+
+		match type_value.indirection {
+			Pointer => unimplemented!("pointer types are not yet supported"),
+			Reference => unimplemented!("reference types are not yet supported"),
+			None => (),
+		}
+		let name = type_value.name.name;
+		self.builder
+			.find_type(|t| match t {
+				Type::Simple { name: n, .. } => n == &name,
+				_ => false,
+			})
+			.map(|(id, _)| id)
+			.ok_or(NamingError::UseOfUndefinedType(name).into())
 	}
 }
