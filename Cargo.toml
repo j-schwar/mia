@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "src/mia_ir",
+  "src/mia_codegen",
+  "src/mia_ir",
 	"src/mia_syntax",
 	"src/tools/mia_ast"
 ]

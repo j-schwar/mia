@@ -1,0 +1,13 @@
+[package]
+name = "mia_codegen"
+authors = ["Jeremy Schwartz <j.schwartz564@icloud.com>"]
+version = "0.0.1-alpha"
+edition = "2018"
+
+[lib]
+name = "mia_codegen"
+
+[dependencies]
+mia_ir = { path = "../mia_ir" }
+
+[dev-dependencies]
