@@ -30,7 +30,7 @@ pub fn compile_ast(tu: ast::TranslationUnit) -> Result<Module> {
 
 	// Allocate built-in types.
 	for type_name in &BUILTIN_TYPE_NAMES {
-		module.alloc(Type::new(*type_name));
+		module.alloc(Type::Builtin { name: type_name });
 	}
 
 	let mut compiler = AstCompiler::new(&mut module);
@@ -80,11 +80,7 @@ impl<'m> AstCompiler<'m> {
 			.parameters
 			.into_iter()
 			.map(|parameter| {
-				let type_id = if let Some(type_value) = parameter.type_value {
-					Some(self.resolve_type_value(type_value)?)
-				} else {
-					None
-				};
+				let type_id = self.resolve_type_value(parameter.type_value)?;
 
 				// Having two parameters named the same is illegal so before the creation
 				// of a parameter's value in the scope first ensure that there are no
@@ -104,11 +100,7 @@ impl<'m> AstCompiler<'m> {
 			.collect::<Result<Vec<ValueId>>>()?;
 
 		// Resolve the function's return type if it is present.
-		let return_type = if let Some(return_type) = func.return_type {
-			Some(self.resolve_type_value(return_type)?)
-		} else {
-			None
-		};
+		let return_type = self.resolve_type_value(func.return_type)?;
 
 		// Compile the function body.
 		match func.body {
@@ -183,11 +175,7 @@ impl<'m> AstCompiler<'m> {
 				}
 
 				// If there is a type declaration try and resolve it.
-				let type_value = if let Some(type_value) = type_value {
-					Some(self.resolve_type_value(type_value)?)
-				} else {
-					None
-				};
+				let type_value = self.resolve_type_value(type_value)?;
 
 				// Allocate a new variable.
 				let var = self
@@ -314,12 +302,16 @@ impl<'m> AstCompiler<'m> {
 	}
 
 	/// Looks for an IR type which matches `type_value` in the current context.
-	fn resolve_type_value(&mut self, type_value: ast::TypeValue) -> Result<TypeId> {
-		let name = type_value.name.name;
-		self.builder
-			.module
-			.find_with_name(&name)
-			.map(|(id, _)| id)
-			.ok_or(NamingError::UseOfUndefinedType(name).into())
+	fn resolve_type_value(&mut self, type_value: Option<ast::TypeValue>) -> Result<TypeId> {
+		if let Some(type_value) = type_value {
+			let name = type_value.name.name;
+			self.builder
+				.module
+				.find_with_name(&name)
+				.map(|(id, _)| id)
+				.ok_or(NamingError::UseOfUndefinedType(name).into())
+		} else {
+			Ok(self.builder.new_implicit_type())
+		}
 	}
 }

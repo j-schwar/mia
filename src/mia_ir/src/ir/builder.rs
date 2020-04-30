@@ -2,7 +2,7 @@ use super::module::Module;
 use super::scope::{Scope, ScopeId};
 use super::traits::IdArena;
 use crate::ir::{
-	BinaryOperator, Function, FunctionId, Instruction, TypeId, UnaryOperator, Value, ValueId,
+	BinaryOperator, Function, FunctionId, Instruction, Type, TypeId, UnaryOperator, Value, ValueId,
 };
 
 pub struct Builder<'m> {
@@ -125,12 +125,18 @@ impl<'m> Builder<'m> {
 		return id;
 	}
 
+	/// Allocates a new implicit type returning it's identifier.
+	pub fn new_implicit_type(&mut self) -> TypeId {
+		self.module.alloc_with_id(|id| Type::Implicit { id })
+	}
+
 	/// If `value` is not `None`, it is returned, otherwise a new temporary value
-	/// is created and returned.
+	/// is created, with an implicit type, and returned.
 	fn value_or_temp(&mut self, value: Option<ValueId>) -> ValueId {
 		value.unwrap_or_else(|| {
+			let type_id = self.new_implicit_type();
 			self.module
-				.alloc_with_id(|id| Value::new_temporary(id, None))
+				.alloc_with_id(|id| Value::new_temporary(id, type_id))
 		})
 	}
 
@@ -263,7 +269,7 @@ impl<'m> Builder<'m> {
 		&mut self,
 		name: String,
 		parameters: Vec<ValueId>,
-		return_type: Option<TypeId>,
+		return_type: TypeId,
 		scope: ScopeId,
 	) -> FunctionId {
 		let function = Function::new(name, parameters, return_type, scope);

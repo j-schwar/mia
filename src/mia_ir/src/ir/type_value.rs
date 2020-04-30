@@ -3,23 +3,18 @@ use id_arena::Id;
 
 /// Contains data about a type.
 #[derive(Debug, Eq, PartialEq)]
-pub struct Type {
-	name: String,
-}
+pub enum Type {
+	Builtin { name: &'static str },
 
-impl Type {
-	/// Constructs a new type instance.
-	pub fn new<S>(name: S) -> Self
-	where
-		S: Into<String>,
-	{
-		Type { name: name.into() }
-	}
+	Implicit { id: TypeId },
 }
 
 impl MaybeNamed for Type {
 	fn name(&self) -> Option<&str> {
-		Some(&self.name)
+		match self {
+			Type::Builtin { name, .. } => Some(*name),
+			Type::Implicit { .. } => None,
+		}
 	}
 }
 
