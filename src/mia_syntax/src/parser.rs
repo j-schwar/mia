@@ -532,9 +532,17 @@ mod stmt {
 		Ok((i, Statement::Expr(e)))
 	}
 
+	/// Parses a return statement.
+	fn return_statement(i: &str) -> IResult<&str, Statement> {
+		let (i, _) = tag("ret")(i)?;
+		let (i, e) = ws_delimited(expr::parse)(i)?;
+		let (i, _) = char(';')(i)?;
+		Ok((i, Statement::Return(e)))
+	}
+
 	/// Parses a statement.
 	pub fn parse(i: &str) -> IResult<&str, Statement> {
-		alt((declaration, assignment, expression))(i)
+		alt((declaration, assignment, expression, return_statement))(i)
 	}
 
 	#[cfg(test)]
@@ -590,6 +598,19 @@ mod stmt {
 					type_value: Some(TypeValue::new("i32", TypeIndirection::None, false)),
 					value: Expression::Literal(Literal::Int { value: 0 })
 				}
+			);
+		}
+
+		#[test]
+		fn test_return_statement() {
+			let (_, s) = parse("ret a || b;").unwrap();
+			assert_eq!(
+				s,
+				Statement::Return(Expression::Infix {
+					op: InfixOperator::Or,
+					lhs: Expression::Variable(Ident::from("a")).into(),
+					rhs: Expression::Variable(Ident::from("b")).into(),
+				})
 			);
 		}
 	}

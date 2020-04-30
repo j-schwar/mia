@@ -113,7 +113,9 @@ impl<'m> AstCompiler<'m> {
 		// Compile the function body.
 		match func.body {
 			ast::FunctionBody::Expr(e) => {
-				self.compile_expression(None, e)?;
+				let result = self.compile_expression(None, e)?;
+				// Ensure to include the implicit return that comes with expression bodies.
+				self.builder.build_return(result);
 			}
 			ast::FunctionBody::Block(b) => {
 				self.compile_code_block(b)?;
@@ -207,6 +209,11 @@ impl<'m> AstCompiler<'m> {
 				// passes will ensure that the variable is mutable and has a matching
 				// type to the expression.
 				self.compile_expression(Some(var), value)?;
+			}
+
+			Return(e) => {
+				let id = self.compile_expression(None, e)?;
+				self.builder.build_return(id);
 			}
 		}
 

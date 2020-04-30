@@ -129,6 +129,8 @@ where
 			v.visit_ident(ident);
 			v.visit_expression(value);
 		}
+
+		Return(e) => v.visit_expression(e),
 	}
 }
 
@@ -348,6 +350,8 @@ where
 			let value = t.transform_expression(value);
 			Assign { ident, value }
 		}
+
+		Return(e) => Return(t.transform_expression(e)),
 	}
 }
 
