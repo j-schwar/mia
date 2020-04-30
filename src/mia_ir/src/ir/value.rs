@@ -1,3 +1,4 @@
+use super::traits::MaybeNamed;
 use super::type_value::TypeId;
 use id_arena::Id;
 
@@ -35,6 +36,23 @@ impl Value {
 		match self {
 			Value::Named { type_value, .. } => *type_value,
 			Value::Temporary { type_value, .. } => *type_value,
+		}
+	}
+
+	/// Returns a string representation of `self`.
+	pub fn as_string(&self) -> String {
+		match self {
+			Value::Named { name, .. } => name.clone(),
+			Value::Temporary { id, .. } => format!("${}", id.index()),
+		}
+	}
+}
+
+impl MaybeNamed for Value {
+	fn name(&self) -> Option<&str> {
+		match self {
+			Value::Named { name, .. } => Some(name.as_str()),
+			_ => None,
 		}
 	}
 }

@@ -1,6 +1,7 @@
 use id_arena::Id;
 
 use super::scope::ScopeId;
+use super::traits::MaybeNamed;
 use super::type_value::TypeId;
 use super::value::ValueId;
 
@@ -38,6 +39,12 @@ impl Function {
 			return_type,
 			scope,
 		}
+	}
+}
+
+impl MaybeNamed for Function {
+	fn name(&self) -> Option<&str> {
+		Some(&self.name)
 	}
 }
 
