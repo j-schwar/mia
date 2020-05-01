@@ -241,6 +241,9 @@ pub enum Statement {
 	/// identifier "=" expression ";"
 	/// ```
 	Assign { ident: Ident, value: Expression },
+
+	/// A return statement.
+	Return(Expression),
 }
 
 impl Ast for Statement {

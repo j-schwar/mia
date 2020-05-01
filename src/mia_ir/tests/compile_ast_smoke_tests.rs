@@ -52,3 +52,9 @@ fn test_variable_redefinition() {
 	}";
 	invoke_compiler(source);
 }
+
+#[test]
+fn test_integer_literal() {
+	let source = "fun add_1(x: i32) -> i32 = x + 1;";
+	invoke_compiler(source);
+}

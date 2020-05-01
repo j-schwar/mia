@@ -1,6 +1,7 @@
 use id_arena::Id;
 
 use super::scope::ScopeId;
+use super::traits::MaybeNamed;
 use super::type_value::TypeId;
 use super::value::ValueId;
 
@@ -16,19 +17,14 @@ pub struct Function {
 	pub parameters: Vec<ValueId>,
 
 	/// The return type of the function if present.
-	pub return_type: Option<TypeId>,
+	pub return_type: TypeId,
 
 	/// The id of the scope associated with this function.
 	pub scope: ScopeId,
 }
 
 impl Function {
-	pub fn new<S>(
-		name: S,
-		parameters: Vec<ValueId>,
-		return_type: Option<TypeId>,
-		scope: ScopeId,
-	) -> Self
+	pub fn new<S>(name: S, parameters: Vec<ValueId>, return_type: TypeId, scope: ScopeId) -> Self
 	where
 		S: Into<String>,
 	{
@@ -38,6 +34,12 @@ impl Function {
 			return_type,
 			scope,
 		}
+	}
+}
+
+impl MaybeNamed for Function {
+	fn name(&self) -> Option<&str> {
+		Some(&self.name)
 	}
 }
 

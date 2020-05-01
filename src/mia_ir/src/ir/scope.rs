@@ -1,146 +1,100 @@
-use super::stmt::Statement;
-use super::value::*;
-use crate::ir::Context;
-use id_arena::{Arena, Id};
-use std::borrow::Borrow;
+use super::instruction::Instruction;
+use super::module::Module;
+use super::traits::{IdArena, MaybeNamed};
+use super::value::{Value, ValueId};
+use id_arena::Id;
 
-/// Holds IR code for a scope.
+/// IR scope; simply it is a sequence of instructions along with a collection
+/// of variables which may be referenced in child scopes.
 #[derive(Debug, Eq, PartialEq)]
 pub struct Scope {
-	/// The parent scope of `self`.
-	///
-	/// Statements created in a scope may reference values and types from its
-	/// parent, its parent's parent, etc.
+	/// This scope's parent scope if it exists.
 	pub parent: Option<ScopeId>,
 
-	/// The sequence of statements describing the logic of this scope.
-	pub statements: Vec<Statement>,
+	/// The sequence of instructions defined in this scope.
+	pub instructions: Vec<Instruction>,
 
-	value_arena: Arena<Value>,
+	/// The collection of values that have been defined in this scope.
+	///
+	/// Lower scopes (i.e., scopes which are a decedent of this one) may freely
+	/// use theses values in their instructions as they are considered to sill
+	/// be "in-scope".
+	///
+	/// We use a vector here rather than a set as the order in which these values
+	/// are defined in is important. When searching through a scope to find a
+	/// variable with a specific name, we want to find the most recent one. To
+	/// do this, we iterate through this list in reverse order.
+	pub values: Vec<ValueId>,
 }
 
 impl Scope {
-	/// Constructs a new, empty scope with an optional parent.
+	/// Constructs a new `Scope` instances.
 	pub fn new(parent: Option<ScopeId>) -> Self {
 		Scope {
 			parent,
-			statements: Vec::new(),
-			value_arena: Arena::new(),
+			instructions: Vec::new(),
+			values: Vec::new(),
 		}
 	}
 
-	/// Retrieves the value with a given `id` in this scope.
-	pub fn get_value(&self, id: ValueId) -> Option<&Value> {
-		self.value_arena.get(id)
-	}
-
-	/// Retrieves a mutable reference to the value with a given `id`.
-	pub fn get_value_mut(&mut self, id: ValueId) -> Option<&mut Value> {
-		self.value_arena.get_mut(id)
-	}
-
-	/// Searches for and returns the first value in this scope which satisfies a
-	/// given predicate.
-	pub fn find_value<P>(&self, predicate: P) -> Option<(ValueId, &Value)>
-	where
-		P: Fn(&Value) -> bool,
-	{
-		self.value_arena.iter().find(|(_, item)| predicate(item))
-	}
-
-	/// Recursively searches through this and above scopes for the first value
-	/// which satisfies `predicate`.
+	/// Searches this scope for the most recent value which satisfies `predicate`.
+	/// If unable to find such a value in this scope, parent scopes are
+	/// recursively searched until such a value is found or there are no more
+	/// scopes left to search.
 	///
 	/// ## Panics
 	///
-	/// Panics if any of the scopes that dominate this one are not allocated in
-	/// `context`.
-	pub fn lookup_value<'ctx, P>(
-		&'ctx self,
-		context: &'ctx Context,
-		predicate: P,
-	) -> Option<(ValueId, &'ctx Value)>
+	/// Panics if any of the following conditions are true:
+	///
+	/// * Any of the values in `self.values` are not allocated in `module`. This
+	/// goes for all of this scope's ancestors as well.
+	///
+	/// * Any of this scope's ancestors are not allocated in `module`.
+	///
+	pub fn search<'m, P>(&self, module: &'m Module, predicate: P) -> Option<ValueId>
 	where
-		P: Fn(&Value) -> bool + Clone,
+		P: Fn(&'m Value) -> bool + Clone,
 	{
-		let local = self.find_value(predicate.clone());
-		if local.is_some() || self.parent.is_none() {
-			local
+		for id in self.values.iter().rev() {
+			let value = module.get_unwrap(*id);
+			if predicate(value) {
+				return Some(*id);
+			}
+		}
+
+		if let Some(parent) = self.parent {
+			module.get_unwrap(parent).search(module, predicate.clone())
 		} else {
-			let parent = context
-				.get_scope(self.parent.unwrap())
-				.expect("scope is allocated in different context");
-			parent.lookup_value(context, predicate)
+			None
 		}
 	}
 
-	/// Searches for and returns the first value in this scope with a given name.
-	pub fn find_value_with_name<S>(&self, name: S) -> Option<(ValueId, &Value)>
-	where
-		S: Borrow<String>,
-	{
-		self.find_value(|v| match v {
-			Value::Named { name: n, .. } => n == name.borrow(),
-			_ => false,
-		})
-	}
-
-	/// Recursively searches through this and above scopes for the first value
-	/// with a given name.
+	/// Recursively searches this and above scopes for the most recent value with
+	/// a given name.
 	///
 	/// ## Panics
 	///
-	/// Panics if any of the scopes that dominate this one are not allocated in
-	/// `context`.
-	pub fn lookup_value_with_name<'ctx, S>(
-		&'ctx self,
-		context: &'ctx Context,
-		name: S,
-	) -> Option<(ValueId, &'ctx Value)>
-	where
-		S: Borrow<String>,
-	{
-		self.lookup_value(context, |v| match v {
-			Value::Named { name: n, .. } => n == name.borrow(),
-			_ => false,
-		})
+	/// Panics if any of the following conditions are true:
+	///
+	/// * Any of the values in `self.values` are not allocated in `module`. This
+	/// goes for all of this scope's ancestors as well.
+	///
+	/// * Any of this scope's ancestors are not allocated in `module`.
+	///
+	pub fn search_by_name(&self, module: &Module, name: &str) -> Option<ValueId> {
+		self.search(module, |v| v.name() == Some(name))
 	}
 
-	/// Allocates a new value in this scope.
-	pub fn alloc_value(&mut self, v: Value) -> ValueId {
-		self.value_arena.alloc(v)
+	/// Pushes a new value identifier into this scope.
+	pub fn push_value(&mut self, id: ValueId) {
+		self.values.push(id);
 	}
 
-	/// Allocates a new temporary value in this scope.
-	pub fn alloc_temp_value(&mut self) -> ValueId {
-		self.value_arena
-			.alloc_with_id(|id| Value::new_temporary(id, None))
+	/// Pushes a new instruction into this scope.
+	pub fn push_instruction(&mut self, instruction: Instruction) {
+		self.instructions.push(instruction);
 	}
 }
 
+/// A scope identifier.
 pub type ScopeId = Id<Scope>;
-
-#[cfg(test)]
-mod test {
-	use super::*;
-
-	#[test]
-	fn test_value_lookup() {
-		let mut context = Context::new();
-		let s1 = context.alloc_scope(Scope::new(None));
-		let s2 = context.alloc_scope(Scope::new(Some(s1)));
-
-		let v1 = context.get_scope_mut(s1).unwrap().alloc_value(Value::new(
-			"a".to_string(),
-			None,
-			false,
-		));
-		let (v2, _) = context
-			.get_scope(s2)
-			.unwrap()
-			.lookup_value_with_name(&context, &String::from("a"))
-			.expect("failed to lookup value");
-
-		assert_eq!(v1, v2);
-	}
-}
