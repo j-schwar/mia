@@ -2,7 +2,8 @@ use super::module::Module;
 use super::scope::{Scope, ScopeId};
 use super::traits::IdArena;
 use crate::ir::{
-	BinaryOperator, Function, FunctionId, Instruction, Type, TypeId, UnaryOperator, Value, ValueId,
+	BinaryOperator, Function, FunctionId, Instruction, LiteralKind, Type, TypeId, UnaryOperator,
+	Value, ValueId,
 };
 
 pub struct Builder<'m> {
@@ -265,6 +266,7 @@ impl<'m> Builder<'m> {
 		self.active_scope_mut().push_instruction(instruction);
 	}
 
+	/// Builds a `Function` definition appending it to the builder's module.
 	pub fn build_function(
 		&mut self,
 		name: String,
@@ -274,5 +276,16 @@ impl<'m> Builder<'m> {
 	) -> FunctionId {
 		let function = Function::new(name, parameters, return_type, scope);
 		self.module.alloc(function)
+	}
+
+	/// Builds a new integer literal.
+	pub fn build_integer_literal(&mut self, value: u64) -> ValueId {
+		// TODO: Consider memoizing this type identifier
+		let type_id = self.module.alloc(Type::IntegerLiteralType);
+		let value = Value::Literal {
+			type_value: type_id,
+			kind: LiteralKind::Int { value },
+		};
+		return self.module.alloc(value);
 	}
 }

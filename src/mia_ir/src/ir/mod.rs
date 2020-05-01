@@ -256,7 +256,12 @@ impl<'m> AstCompiler<'m> {
 				Ok(result)
 			}
 
-			Literal(_) => unimplemented!("support for IR literals is needed"),
+			Literal(l) => {
+				use ast::Literal::*;
+				match l {
+					Int { value } => Ok(self.builder.build_integer_literal(value)),
+				}
+			}
 
 			Call { name, args } => {
 				let (function_id, _) = self
