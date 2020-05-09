@@ -48,7 +48,7 @@ impl Display for Literal {
 }
 
 /// A named variable.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Variable {
 	pub name: String,
 }
@@ -411,14 +411,14 @@ impl ContextualDisplay<IndentContext> for Term {
 			} => {
 				write!(
 					f,
-					"{}let {}: {} = {} in\n{}",
-					context, variable, type_annotation, expression, context
+					"{}let {}: {} = {} in\n",
+					context, variable, type_annotation, expression
 				)?;
 				continuation.fmt(context, f)
 			}
 
 			Match { target, branches } => {
-				write!(f, "match {} {{\n", target)?;
+				write!(f, "{}match {} {{\n", context, target)?;
 				context.increase_indent();
 				for (pattern, term) in branches {
 					write!(f, "{}{} =>\n", context, pattern)?;
@@ -431,7 +431,7 @@ impl ContextualDisplay<IndentContext> for Term {
 				write!(f, "{}}}", context)
 			}
 
-			Return(v) => write!(f, "ret {}", v),
+			Return(v) => write!(f, "{}ret {}", context, v),
 
 			Undefined => write!(f, "undefined"),
 		}
