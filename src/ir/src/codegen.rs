@@ -10,7 +10,7 @@
 pub use inkwell::context::Context;
 pub use inkwell::module::Module;
 
-use crate::grammar::{Definition, Expression, Literal, Operator, Program, Term, Value, Variable};
+use crate::grammar::*;
 use crate::types::{Native, Type};
 use inkwell::builder::Builder;
 use inkwell::types::{BasicType, BasicTypeEnum};
@@ -142,7 +142,26 @@ impl<'a, 'ctx> FunctionCompiler<'a, 'ctx> {
 				self.compile_term(continuation);
 			}
 
-			Match { .. } => unimplemented!("match terms are not yet supported"),
+			Match { target, branches } => {
+				// A little hack to determine if this match term should be treated as
+				// an if-else term.
+				//
+				// TODO: Replace with a type check on the target
+				let is_boolean_match = Self::find_pattern_index_where(
+					&branches.iter().map(|(p, _)| p).collect(),
+					|p| match p {
+						Pattern::Literal(Literal::Bool(_)) => true,
+						_ => false,
+					},
+				)
+				.is_some();
+
+				if is_boolean_match {
+					self.compile_boolean_match_term(target, branches);
+				} else {
+					unimplemented!("non-boolean match terms are not yet supported");
+				}
+			}
 
 			Return(v) => {
 				let value = self.lookup_variable(v);
@@ -152,35 +171,78 @@ impl<'a, 'ctx> FunctionCompiler<'a, 'ctx> {
 				));
 			}
 
-			Undefined => panic!("undefined term reached: internal compiler error"),
+			Undefined => panic!("internal compiler error: undefined term reached"),
 		}
 	}
 
-	fn binary_operands(
-		&self,
-		operands: &Vec<Variable>,
-	) -> (AnyValueEnum<'ctx>, AnyValueEnum<'ctx>) {
-		let lhs = self.lookup_variable(&operands[0]);
-		let rhs = self.lookup_variable(&operands[1]);
-		return (lhs, rhs);
-	}
+	/// Compiles a match term where the target is a boolean value.
+	///
+	/// # Assumptions
+	///
+	/// * `target` is a variable with type `bool`.
+	///
+	/// * `branches` has at least 2 elements, one which can be interpreted as the
+	/// `true` branch and one to be the `false` branch. These two branches must
+	/// be unique.
+	///
+	/// # Panics
+	///
+	/// Panics if any of the above assumptions are not true.
+	fn compile_boolean_match_term(&mut self, target: &Variable, branches: &Vec<(Pattern, Term)>) {
+		let function = self
+			.codegen
+			.builder
+			.get_insert_block()
+			.expect("internal compiler error: unable to retrieve builder's insert block")
+			.get_parent()
+			.expect("internal compiler error: unable to retrieve function for basic block");
 
-	fn int_compare(
-		&self,
-		predicate: IntPredicate,
-		operands: &Vec<Variable>,
-		result_name: &str,
-	) -> AnyValueEnum<'ctx> {
-		let (lhs, rhs) = self.binary_operands(operands);
+		let patterns = branches.iter().map(|(p, _)| p).collect::<Vec<_>>();
+
+		let then_block = self.codegen.context.append_basic_block(function, "");
+		let else_block = self.codegen.context.append_basic_block(function, "");
+
+		// Compile jump condition.
+		let comparison = self.lookup_variable(target).into_int_value();
 		self.codegen
 			.builder
-			.build_int_compare(
-				predicate,
-				lhs.into_int_value(),
-				rhs.into_int_value(),
-				result_name,
-			)
-			.into()
+			.build_conditional_branch(comparison, then_block, else_block);
+
+		// Compile true block.
+		let then_index = Self::find_pattern_index_where(&patterns, |p| match p {
+			Pattern::Literal(Literal::Bool(true)) => true,
+			Pattern::Variable(_) => true,
+			_ => false,
+		})
+		.expect("internal compiler error: unable to find match for then_branch");
+		self.codegen.builder.position_at_end(then_block);
+		self.compile_term(&branches[then_index].1);
+
+		// Compile false block.
+		let else_index = Self::find_pattern_index_where(&patterns, |p| match p {
+			Pattern::Literal(Literal::Bool(false)) => true,
+			Pattern::Variable(_) => true,
+			_ => false,
+		})
+		.expect("internal compiler error: unable to find match for else_branch");
+		if then_index == else_index {
+			panic!("internal compiler error: then_branch and else_branch are the same");
+		}
+		self.codegen.builder.position_at_end(else_block);
+		self.compile_term(&branches[else_index].1);
+	}
+
+	/// Returns the index of the first pattern which satisfies `predicate`.
+	fn find_pattern_index_where<P>(patterns: &Vec<&Pattern>, predicate: P) -> Option<usize>
+	where
+		P: Fn(&Pattern) -> bool,
+	{
+		for (i, pattern) in patterns.iter().enumerate() {
+			if predicate(pattern) {
+				return Some(i);
+			}
+		}
+		return None;
 	}
 
 	fn compile_expression(&self, expr: &Expression, result_name: &str) -> AnyValueEnum<'ctx> {
@@ -325,6 +387,33 @@ impl<'a, 'ctx> FunctionCompiler<'a, 'ctx> {
 					.as_any_value_enum()
 			}
 		}
+	}
+
+	fn binary_operands(
+		&self,
+		operands: &Vec<Variable>,
+	) -> (AnyValueEnum<'ctx>, AnyValueEnum<'ctx>) {
+		let lhs = self.lookup_variable(&operands[0]);
+		let rhs = self.lookup_variable(&operands[1]);
+		return (lhs, rhs);
+	}
+
+	fn int_compare(
+		&self,
+		predicate: IntPredicate,
+		operands: &Vec<Variable>,
+		result_name: &str,
+	) -> AnyValueEnum<'ctx> {
+		let (lhs, rhs) = self.binary_operands(operands);
+		self.codegen
+			.builder
+			.build_int_compare(
+				predicate,
+				lhs.into_int_value(),
+				rhs.into_int_value(),
+				result_name,
+			)
+			.into()
 	}
 
 	fn compile_value(&self, value: &Value) -> AnyValueEnum<'ctx> {
