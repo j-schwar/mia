@@ -9,10 +9,10 @@ pub struct Terms<'a> {
 }
 
 impl<'a> Terms<'a> {
-	/// Constructs a new iterator over `definition`.
-	pub fn new(definition: &'a Definition) -> Self {
+	/// Constructs a new iterator over starting at `term`.
+	pub fn new(term: &'a Term) -> Self {
 		Terms {
-			next: Some(&definition.term),
+			next: Some(&term),
 			stack: Vec::new(),
 		}
 	}

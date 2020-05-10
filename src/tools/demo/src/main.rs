@@ -1,33 +1,26 @@
+use ir::builder::*;
 use ir::codegen::*;
 use ir::grammar::*;
 use ir::types::*;
 
 fn main() {
-	let term = Term::new_return("z");
-	let term = Term::new_bind(
-		"z",
-		Native::Int,
-		Expression::new_binary(Operator::Add, "x", "y"),
-		term,
-	);
-
-	let int = Type::Native(Native::Int);
+	let term = Builder::new()
+		.binary_op("z", Native::Int, Operator::Add, "x", "y")
+		.ret("z")
+		.build();
 	let sum = Definition::new(
 		"sum",
-		vec![("x", int.clone()), ("y", int.clone())],
+		vec![("x", Native::Int.into()), ("y", Native::Int.into())],
 		Native::Int,
 		term,
 	);
 
-	let term = Term::new_return("result");
-	let term = Term::new_bind(
-		"result",
-		Native::Int,
-		Expression::new_call("sum", vec!["a", "b"]),
-		term,
-	);
-	let term = Term::new_bind("b", Native::Int, Literal::Int(2), term);
-	let term = Term::new_bind("a", Native::Int, Literal::Int(1), term);
+	let term = Builder::new()
+		.bind("a", Native::Int, Literal::Int(1))
+		.bind("b", Native::Int, Literal::Int(2))
+		.call("result", Native::Int, "sum", vec!["a", "b"])
+		.ret("result")
+		.build();
 	let main = Definition::new("main", Vec::<(Variable, Type)>::new(), Native::Int, term);
 
 	let program = Program::new(vec![main, sum]);

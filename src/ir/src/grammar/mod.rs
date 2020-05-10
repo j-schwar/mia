@@ -397,6 +397,11 @@ impl Term {
 			_ => false,
 		}
 	}
+
+	/// Returns an iterator over the term sequence rooted at this term.
+	pub fn iter(&self) -> Terms {
+		Terms::new(self)
+	}
 }
 
 impl ContextualDisplay<IndentContext> for Term {
@@ -475,7 +480,7 @@ impl Definition {
 	///
 	/// `Match` terms are explored in a depth-first manor.
 	pub fn terms(&self) -> Terms {
-		Terms::new(self)
+		Terms::new(&self.term)
 	}
 }
 
