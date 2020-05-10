@@ -16,7 +16,7 @@ addons:
   apt:
     sources:
       - sourceline: "ppa:ubuntu-toolchain-r/test"
-      - sourceline: "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-8 main"
+      - sourceline: "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-10 main"
     packages:
       - libelf-dev
       - lib32z1-dev
@@ -29,7 +29,7 @@ addons:
       - libjemalloc-dev
 
 before_install:
-  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install llvm-9-dev
+  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install llvm-10-dev
   - export LLVM_VERSION_DASH=${LLVM_VERSION/./-}
   - export LLVM_VERSION_SHORT=${LLVM_VERSION/./}
   - export PATH=/usr/lib/llvm-${LLVM_VERSION}/bin/:$HOME/.local/bin:$PATH
