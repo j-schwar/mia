@@ -12,10 +12,28 @@ script:
 notifications:
   email: false
 
+addons:
+  apt:
+    sources:
+      - sourceline: "ppa:ubuntu-toolchain-r/test"
+      - sourceline: "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-8 main"
+    packages:
+      - libelf-dev
+      - lib32z1-dev
+      - libedit-dev
+      - libdw-dev
+      - binutils-dev
+      - libiberty-dev
+      - libssl-dev
+      - libgc-dev
+      - libjemalloc-dev
+
 before_install:
-  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-  - sudo apt update
-  - sudo apt install -y llvm-9-dev
+  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install llvm-9-dev
+  - export LLVM_VERSION_DASH=${LLVM_VERSION/./-}
+  - export LLVM_VERSION_SHORT=${LLVM_VERSION/./}
+  - export PATH=/usr/lib/llvm-${LLVM_VERSION}/bin/:$HOME/.local/bin:$PATH
+  - export LLVM_PATH=/usr/share/llvm-${LLVM_VERSION}/cmake/
 
 jobs:
   include:
