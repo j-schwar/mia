@@ -5,6 +5,17 @@ use ir::types::*;
 
 fn main() {
 	let term = Builder::new()
+		.binary_op("c", Native::Bool, Operator::Eq, "a", "b")
+		.ret("c")
+		.build();
+	let foo = Definition::new(
+		"foo",
+		vec![("a", Native::Int.into()), ("b", Native::Int.into())],
+		Native::Bool,
+		term,
+	);
+
+	let term = Builder::new()
 		.binary_op("z", Native::Int, Operator::Add, "x", "y")
 		.ret("z")
 		.build();
@@ -23,7 +34,7 @@ fn main() {
 		.build();
 	let main = Definition::new("main", Vec::<(Variable, Type)>::new(), Native::Int, term);
 
-	let program = Program::new(vec![main, sum]);
+	let program = Program::new(vec![main, sum, foo]);
 	println!("==  IR  ==\n\n{}\n", program);
 
 	let context = Context::create();

@@ -15,6 +15,7 @@ use crate::types::{Native, Type};
 use inkwell::builder::Builder;
 use inkwell::types::{BasicType, BasicTypeEnum};
 use inkwell::values::{AnyValue, AnyValueEnum, BasicValueEnum, FunctionValue};
+use inkwell::IntPredicate;
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
 
@@ -155,6 +156,33 @@ impl<'a, 'ctx> FunctionCompiler<'a, 'ctx> {
 		}
 	}
 
+	fn binary_operands(
+		&self,
+		operands: &Vec<Variable>,
+	) -> (AnyValueEnum<'ctx>, AnyValueEnum<'ctx>) {
+		let lhs = self.lookup_variable(&operands[0]);
+		let rhs = self.lookup_variable(&operands[1]);
+		return (lhs, rhs);
+	}
+
+	fn int_compare(
+		&self,
+		predicate: IntPredicate,
+		operands: &Vec<Variable>,
+		result_name: &str,
+	) -> AnyValueEnum<'ctx> {
+		let (lhs, rhs) = self.binary_operands(operands);
+		self.codegen
+			.builder
+			.build_int_compare(
+				predicate,
+				lhs.into_int_value(),
+				rhs.into_int_value(),
+				result_name,
+			)
+			.into()
+	}
+
 	fn compile_expression(&self, expr: &Expression, result_name: &str) -> AnyValueEnum<'ctx> {
 		use Expression::*;
 		match expr {
@@ -163,16 +191,117 @@ impl<'a, 'ctx> FunctionCompiler<'a, 'ctx> {
 			Operation { operator, operands } => {
 				use Operator::*;
 				match operator {
+					/* Binary Arithmetic Operators */
 					Add => {
-						let lhs = self.lookup_variable(&operands[0]).into_int_value();
-						let rhs = self.lookup_variable(&operands[1]).into_int_value();
+						let (lhs, rhs) = self.binary_operands(operands);
 						self.codegen
 							.builder
-							.build_int_add(lhs, rhs, result_name)
+							.build_int_add(lhs.into_int_value(), rhs.into_int_value(), result_name)
 							.into()
 					}
 
-					_ => unimplemented!("operator not yet implemented: '{}'", operator),
+					Sub => {
+						let (lhs, rhs) = self.binary_operands(operands);
+						self.codegen
+							.builder
+							.build_int_sub(lhs.into_int_value(), rhs.into_int_value(), result_name)
+							.into()
+					}
+
+					Mul => {
+						let (lhs, rhs) = self.binary_operands(operands);
+						self.codegen
+							.builder
+							.build_int_mul(lhs.into_int_value(), rhs.into_int_value(), result_name)
+							.into()
+					}
+
+					Div => {
+						let (lhs, rhs) = self.binary_operands(operands);
+						self.codegen
+							.builder
+							.build_int_signed_div(
+								lhs.into_int_value(),
+								rhs.into_int_value(),
+								result_name,
+							)
+							.into()
+					}
+
+					Mod => {
+						let (lhs, rhs) = self.binary_operands(operands);
+						self.codegen
+							.builder
+							.build_int_signed_rem(
+								lhs.into_int_value(),
+								rhs.into_int_value(),
+								result_name,
+							)
+							.into()
+					}
+
+					/* Unary Arithmetic Operators */
+					Neg => {
+						let operand = self.lookup_variable(&operands[0]).into_int_value();
+						self.codegen
+							.builder
+							.build_int_neg(operand, result_name)
+							.into()
+					}
+
+					/* Binary Bitwise */
+					BitAnd => {
+						let (lhs, rhs) = self.binary_operands(operands);
+						self.codegen
+							.builder
+							.build_and(lhs.into_int_value(), rhs.into_int_value(), result_name)
+							.into()
+					}
+
+					BitOr => {
+						let (lhs, rhs) = self.binary_operands(operands);
+						self.codegen
+							.builder
+							.build_or(lhs.into_int_value(), rhs.into_int_value(), result_name)
+							.into()
+					}
+
+					BitXor => {
+						let (lhs, rhs) = self.binary_operands(operands);
+						self.codegen
+							.builder
+							.build_xor(lhs.into_int_value(), rhs.into_int_value(), result_name)
+							.into()
+					}
+
+					/* Unary Bitwise */
+					BitNot => {
+						let operand = self.lookup_variable(&operands[0]).into_int_value();
+						self.codegen.builder.build_not(operand, result_name).into()
+					}
+
+					/* Binary Logical Operators */
+					Eq => self.int_compare(IntPredicate::EQ, operands, result_name),
+
+					Ne => self.int_compare(IntPredicate::NE, operands, result_name),
+
+					Gt => self.int_compare(IntPredicate::SGT, operands, result_name),
+
+					Ge => self.int_compare(IntPredicate::SGE, operands, result_name),
+
+					Lt => self.int_compare(IntPredicate::SLT, operands, result_name),
+
+					Le => self.int_compare(IntPredicate::SLE, operands, result_name),
+
+					/* Unary Logical Operators */
+					Not => {
+						let operand = self.lookup_variable(&operands[0]).into_int_value();
+						let zero = self.codegen.context.bool_type().const_zero();
+						self.codegen
+							.builder
+							.build_int_compare(IntPredicate::EQ, operand, zero, result_name)
+							.into()
+					}
 				}
 			}
 

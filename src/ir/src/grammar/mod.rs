@@ -249,9 +249,15 @@ pub enum Operator {
 	/* Arithmetic Unary */
 	Neg,
 
+	/* Bitwise Binary */
+	BitAnd,
+	BitOr,
+	BitXor,
+
+	/* Bitwise Unary */
+	BitNot,
+
 	/* Logical Binary */
-	And,
-	Or,
 	Eq,
 	Ne,
 	Gt,
@@ -272,8 +278,10 @@ impl Display for Operator {
 			Mul => "*",
 			Div => "/",
 			Mod => "%",
-			And => "&&",
-			Or => "||",
+			BitAnd => "&",
+			BitOr => "|",
+			BitXor => "^",
+			BitNot => "~",
 			Eq => "==",
 			Ne => "!=",
 			Gt => ">",
