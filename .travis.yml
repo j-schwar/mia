@@ -12,6 +12,36 @@ script:
 notifications:
   email: false
 
+cache: cargo
+
+os:
+  - linux
+dist: trusty
+sudo: required
+
+addons:
+  apt:
+    sources:
+      - sourceline: "ppa:ubuntu-toolchain-r/test"
+      - sourceline: "deb http://apt.llvm.org/trusty/ llvm-toolchain-trusty-8 main"
+    packages:
+      - libelf-dev
+      - lib32z1-dev
+      - libedit-dev
+      - libdw-dev
+      - binutils-dev
+      - libiberty-dev
+      - libssl-dev
+      - libgc-dev
+      - libjemalloc-dev
+
+before_install:
+  - sudo apt -yq --allow-unauthenticated install llvm-8-dev
+  - export LLVM_VERSION_DASH=${LLVM_VERSION/./-}
+  - export LLVM_VERSION_SHORT=${LLVM_VERSION/./}
+  - export PATH=/usr/lib/llvm-${LLVM_VERSION}/bin/:$HOME/.local/bin:$PATH
+  - export LLVM_PATH=/usr/share/llvm-${LLVM_VERSION}/cmake/
+
 jobs:
   include:
     - name: fmt-check
@@ -20,3 +50,4 @@ jobs:
         - rustup component add rustfmt
       script:
         - cargo fmt --all -- --check
+  fast_finish: true
