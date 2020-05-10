@@ -31,7 +31,7 @@ addons:
       - libjemalloc-dev
 
 before_install:
-  - sudo -E apt-get -yq --no-install-suggests --no-install-recommends --allow-unauthenticated install llvm-8-dev
+  - sudo apt install llvm-8-dev
   - export LLVM_VERSION_DASH=${LLVM_VERSION/./-}
   - export LLVM_VERSION_SHORT=${LLVM_VERSION/./}
   - export PATH=/usr/lib/llvm-${LLVM_VERSION}/bin/:$HOME/.local/bin:$PATH
