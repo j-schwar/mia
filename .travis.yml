@@ -12,6 +12,9 @@ script:
 notifications:
   email: false
 
+before_install:
+  - sudo apt install -y llvm-10-dev
+
 jobs:
   include:
     - name: fmt-check
