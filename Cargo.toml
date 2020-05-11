@@ -2,6 +2,7 @@
 members = [
 	"src/mia_syntax",
 	"src/ir",
+	"src/syntax",
 	"src/tools/mia_ast",
 	"src/tools/demo",
 ]

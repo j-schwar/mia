@@ -1,0 +1,12 @@
+[package]
+name = "syntax"
+authors = ["Jeremy Schwartz <j.schwartz564@icloud.com>"]
+version = "0.0.1-alpha"
+edition = "2018"
+
+[lib]
+name = "syntax"
+
+[dependencies]
+
+[dev-dependencies]
