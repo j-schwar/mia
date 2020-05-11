@@ -57,6 +57,7 @@ pub enum TokenKind {
 	Lt,          // <
 	Le,          // <=
 	Exclamation, // !
+	Tilde,       // ~
 	Assign,      // =
 
 	/* Control Tokens */
@@ -318,6 +319,7 @@ impl<'a> Iterator for Lexer<'a> {
 			'&' => self.consume_single_char_token(TokenKind::And),
 			'|' => self.consume_single_char_token(TokenKind::Bar),
 			'^' => self.consume_single_char_token(TokenKind::Hat),
+			'~' => self.consume_single_char_token(TokenKind::Tilde),
 			',' => self.consume_single_char_token(TokenKind::Comma),
 			':' => self.consume_single_char_token(TokenKind::Colon),
 			';' => self.consume_single_char_token(TokenKind::Semicolon),
