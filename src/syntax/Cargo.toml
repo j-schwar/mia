@@ -8,5 +8,6 @@ edition = "2018"
 name = "syntax"
 
 [dependencies]
+these = "1.0"
 
 [dev-dependencies]

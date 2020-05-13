@@ -15,19 +15,70 @@ use std::str::Chars;
 #[derive(Debug, PartialEq)]
 pub struct Token {
 	pub kind: TokenKind,
+	pub payload: Payload,
 	pub span: Span,
 }
 
 impl Token {
 	/// Constructs a new token.
 	pub fn new(kind: TokenKind, span: Span) -> Self {
-		Token { kind, span }
+		Token {
+			kind,
+			payload: Payload::None,
+			span,
+		}
+	}
+
+	/// Constructs a new token with a payload.
+	pub fn with_payload(kind: TokenKind, payload: Payload, span: Span) -> Self {
+		Token {
+			kind,
+			payload,
+			span,
+		}
+	}
+
+	/// True if `self` is one of the tokens listed in `kinds`.
+	pub fn is_one_of(&self, kinds: Vec<TokenKind>) -> bool {
+		kinds.contains(&self.kind)
+	}
+
+	/// True if `self` is a whitespace token.
+	pub fn is_whitespace(&self) -> bool {
+		match self.kind {
+			TokenKind::Whitespace => true,
+			_ => false,
+		}
+	}
+
+	/// True if `self` is a comment token.
+	pub fn is_comment(&self) -> bool {
+		match self.kind {
+			TokenKind::Comment => true,
+			_ => false,
+		}
+	}
+
+	/// True if `self` is a keyword token.
+	pub fn is_keyword(&self) -> bool {
+		match self.kind {
+			TokenKind::Keyword(_) => true,
+			_ => false,
+		}
+	}
+
+	/// True if `self` is an identifier token.
+	pub fn is_identifier(&self) -> bool {
+		match self.kind {
+			TokenKind::Identifier => true,
+			_ => false,
+		}
 	}
 }
 
 /// Describes the kind of a token and contains additional information about it
 /// like a literal's value or an identifier's name for example.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum TokenKind {
 	/* Background Tokens */
 	Whitespace,
@@ -35,11 +86,11 @@ pub enum TokenKind {
 
 	/* Textual Tokens */
 	Keyword(Keyword),
-	Identifier(String),
+	Identifier,
 
 	/* Literal Tokens */
-	IntLiteral(i64),
-	BoolLiteral(bool),
+	IntLiteral,
+	BoolLiteral,
 
 	/* Operators */
 	Plus,        // +
@@ -105,6 +156,51 @@ impl TryFrom<&str> for Keyword {
 			"else" => Ok(Else),
 			"ret" => Ok(Ret),
 			_ => Err(()),
+		}
+	}
+}
+
+/// The payload of a token contains additional information about it.
+///
+/// For example, the value of a literal, or the name of an identifier.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Payload {
+	None,
+	IntLiteral(i64),
+	BoolLiteral(bool),
+	Identifier(String),
+}
+
+impl Payload {
+	/// True if `self` is a `None` variant.
+	pub fn is_none(&self) -> bool {
+		match self {
+			Payload::None => true,
+			_ => false,
+		}
+	}
+
+	/// Unwraps an `IntLiteral` variant.
+	pub fn unwrap_int_literal(self) -> i64 {
+		match self {
+			Payload::IntLiteral(v) => v,
+			_ => panic!("expected integer literal payload"),
+		}
+	}
+
+	/// Unwraps a `BoolLiteral` variant.
+	pub fn unwrap_bool_literal(self) -> bool {
+		match self {
+			Payload::BoolLiteral(v) => v,
+			_ => panic!("expected boolean literal payload"),
+		}
+	}
+
+	/// Unwraps an `Identifier` payload.
+	pub fn unwrap_identifier(self) -> String {
+		match self {
+			Payload::Identifier(s) => s,
+			_ => panic!("expected identifier payload"),
 		}
 	}
 }
@@ -218,15 +314,15 @@ impl<'a> Lexer<'a> {
 		let text = start + &continuation;
 
 		if text == "true" {
-			return Token::new(TokenKind::BoolLiteral(true), span);
+			return Token::with_payload(TokenKind::BoolLiteral, Payload::BoolLiteral(true), span);
 		} else if text == "false" {
-			return Token::new(TokenKind::BoolLiteral(false), span);
+			return Token::with_payload(TokenKind::BoolLiteral, Payload::BoolLiteral(false), span);
 		}
 
 		if let Ok(keyword) = Keyword::try_from(text.as_str()) {
 			Token::new(TokenKind::Keyword(keyword), span)
 		} else {
-			Token::new(TokenKind::Identifier(text), span)
+			Token::with_payload(TokenKind::Identifier, Payload::Identifier(text), span)
 		}
 	}
 
@@ -243,7 +339,7 @@ impl<'a> Lexer<'a> {
 		}
 		let value = text.parse::<i64>().unwrap();
 		let span = Span::new(start_index, self.count);
-		return Token::new(TokenKind::IntLiteral(value), span);
+		return Token::with_payload(TokenKind::IntLiteral, Payload::IntLiteral(value), span);
 	}
 
 	/// Consumes a 1 or 2 character long token where the first character `c1` is
@@ -366,6 +462,10 @@ mod test {
 		Token::new(kind, Span::new(start, end))
 	}
 
+	fn token_with_payload(kind: TokenKind, payload: Payload, start: usize, end: usize) -> Token {
+		Token::with_payload(kind, payload, Span::new(start, end))
+	}
+
 	#[test]
 	fn test_whitespace_token() {
 		assert_eq!(
@@ -414,20 +514,28 @@ mod test {
 	fn test_identifier_token() {
 		assert_eq!(
 			lex_single_token("_Foo_42"),
-			token(TokenKind::Identifier("_Foo_42".into()), 0, 7),
+			token_with_payload(
+				TokenKind::Identifier,
+				Payload::Identifier("_Foo_42".into()),
+				0,
+				7
+			),
 		);
 		assert_eq!(
 			lex_single_token("_"),
-			token(TokenKind::Identifier("_".into()), 0, 1),
+			token_with_payload(TokenKind::Identifier, Payload::Identifier("_".into()), 0, 1),
 		);
 	}
 
 	#[test]
 	fn test_int_literal_token() {
-		assert_eq!(lex_single_token("0"), token(TokenKind::IntLiteral(0), 0, 1));
+		assert_eq!(
+			lex_single_token("0"),
+			token_with_payload(TokenKind::IntLiteral, Payload::IntLiteral(0), 0, 1)
+		);
 		assert_eq!(
 			lex_single_token("120345"),
-			token(TokenKind::IntLiteral(120345), 0, 6)
+			token_with_payload(TokenKind::IntLiteral, Payload::IntLiteral(120345), 0, 6)
 		);
 	}
 
@@ -435,11 +543,11 @@ mod test {
 	fn test_bool_literal() {
 		assert_eq!(
 			lex_single_token("true"),
-			token(TokenKind::BoolLiteral(true), 0, 4)
+			token_with_payload(TokenKind::BoolLiteral, Payload::BoolLiteral(true), 0, 4)
 		);
 		assert_eq!(
 			lex_single_token("false"),
-			token(TokenKind::BoolLiteral(false), 0, 5),
+			token_with_payload(TokenKind::BoolLiteral, Payload::BoolLiteral(false), 0, 5),
 		);
 	}
 

@@ -1,6 +1,9 @@
 pub mod lex;
+pub mod parser;
 
-pub use lex::{Lexer, Token, TokenKind};
+pub use lex::{Lexer, Payload, Token, TokenKind};
+pub use parser::{ParseError, Parser};
+use std::convert::TryFrom;
 
 /// A start and end pair of indices describing a substring.
 ///
@@ -72,7 +75,7 @@ pub trait Spanning {
 	}
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Program {
 	pub functions: Vec<Function>,
 }
@@ -96,7 +99,7 @@ impl Spanning for Program {
 	}
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Function {
 	pub ident: Identifier,
 	pub parameters: Vec<(Identifier, Identifier)>,
@@ -134,7 +137,7 @@ impl Spanning for Function {
 }
 
 /// AST function body node.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum FunctionBody {
 	Expr(Expression),
 	Block {
@@ -171,7 +174,7 @@ impl Spanning for FunctionBody {
 }
 
 /// AST statement node.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Statement {
 	Expr(Expression),
 
@@ -312,7 +315,7 @@ impl Spanning for Statement {
 /// expressions, regardless of precedence are simply lumped into this abstract
 /// data type. Instead, we rely on the parser to enforce precedence when
 /// constructing the AST.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Expression {
 	Ident(Identifier),
 
@@ -398,7 +401,7 @@ impl Spanning for Expression {
 
 /// Wrapper for operator types (e.g., `BinaryOp` and `UnaryOp`) providing an
 /// additional `span` field.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Operator<O> {
 	pub op: O,
 	span: Span,
@@ -441,6 +444,30 @@ pub enum BinaryOp {
 	Le, // <=
 }
 
+impl TryFrom<TokenKind> for BinaryOp {
+	type Error = ();
+
+	fn try_from(value: TokenKind) -> Result<Self, Self::Error> {
+		match value {
+			TokenKind::Plus => Ok(BinaryOp::Add),
+			TokenKind::Minus => Ok(BinaryOp::Sub),
+			TokenKind::Star => Ok(BinaryOp::Mul),
+			TokenKind::Slash => Ok(BinaryOp::Div),
+			TokenKind::Percent => Ok(BinaryOp::Rem),
+			TokenKind::And => Ok(BinaryOp::BitAnd),
+			TokenKind::Bar => Ok(BinaryOp::BitOr),
+			TokenKind::Hat => Ok(BinaryOp::BitXor),
+			TokenKind::Eq => Ok(BinaryOp::Eq),
+			TokenKind::Ne => Ok(BinaryOp::Ne),
+			TokenKind::Gt => Ok(BinaryOp::Gt),
+			TokenKind::Ge => Ok(BinaryOp::Ge),
+			TokenKind::Lt => Ok(BinaryOp::Lt),
+			TokenKind::Le => Ok(BinaryOp::Le),
+			_ => Err(()),
+		}
+	}
+}
+
 /// The set of unary operators supported by the language.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum UnaryOp {
@@ -454,8 +481,21 @@ pub enum UnaryOp {
 	Not, // !
 }
 
+impl TryFrom<TokenKind> for UnaryOp {
+	type Error = ();
+
+	fn try_from(value: TokenKind) -> Result<Self, Self::Error> {
+		match value {
+			TokenKind::Minus => Ok(UnaryOp::Neg),
+			TokenKind::Tilde => Ok(UnaryOp::BitNot),
+			TokenKind::Exclamation => Ok(UnaryOp::Not),
+			_ => Err(()),
+		}
+	}
+}
+
 /// AST literal node.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Literal {
 	pub kind: LiteralKind,
 	span: Span,
@@ -475,7 +515,7 @@ impl Spanning for Literal {
 }
 
 /// Kind discriminant for AST literal nodes.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum LiteralKind {
 	Int(i64),
 	Bool(bool),
@@ -484,7 +524,7 @@ pub enum LiteralKind {
 /// AST identifier node.
 ///
 /// Represents a user defined identifier for a variable/function/type/etc.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Identifier {
 	pub text: String,
 	span: Span,
