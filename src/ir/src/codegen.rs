@@ -104,6 +104,7 @@ impl<'ctx> CodeGen<'ctx> {
 			Type::Sum(_) => unimplemented!("sum types are not yet supported"),
 			Type::Product(_) => unimplemented!("product types are not yet supported"),
 			Type::Unit => unimplemented!("the unit type is not net supported"),
+			Type::Infer => panic!("internal compiler error: found infer type marker"),
 		}
 	}
 }

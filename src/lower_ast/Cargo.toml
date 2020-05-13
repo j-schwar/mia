@@ -1,0 +1,14 @@
+[package]
+name = "lower_ast"
+authors = ["Jeremy Schwartz <j.schwartz564@icloud.com>"]
+version = "0.0.1-alpha"
+edition = "2018"
+
+[lib]
+name = "lower_ast"
+
+[dependencies]
+ir = { path = "../ir" }
+syntax = { path = "../syntax" }
+
+[dev-dependencies]

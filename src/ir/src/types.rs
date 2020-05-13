@@ -26,6 +26,9 @@ pub enum Type {
 
 	/// The unit type.
 	Unit,
+
+	/// A marker type telling the compiler to infer this type.
+	Infer,
 }
 
 impl Type {
@@ -145,6 +148,8 @@ impl Display for Type {
 			}
 
 			Unit => write!(f, "{{}}"),
+
+			Infer => write!(f, "_"),
 		}
 	}
 }

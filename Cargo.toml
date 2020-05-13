@@ -2,6 +2,8 @@
 members = [
 	"src/ir",
 	"src/syntax",
+	"src/lower_ast",
+	"src/tools/miac",
 	"src/tools/mia_ast",
 	"src/tools/demo",
 ]

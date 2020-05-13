@@ -1,0 +1,12 @@
+[package]
+name = "miac"
+authors = ["Jeremy Schwartz <j.schwartz564@icloud.com>"]
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+colored = "1.9.3"
+structopt = "0.3"
+ir = { path = "../../ir" }
+lower_ast = { path = "../../lower_ast" }
+syntax = { path = "../../syntax" }

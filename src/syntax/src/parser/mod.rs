@@ -159,11 +159,15 @@ impl<'a> Parser<'a> {
 		self.skip_whitespace();
 
 		// Parse the return type.
-		let return_type = {
+		let return_type = if self.peek_has_kind(TokenKind::Arrow) {
 			let arrow = ret_if_that!(self.expect(TokenKind::Arrow, Payload::None));
 			self.skip_whitespace();
 			let typename = ret_if_that!(self.parse_ident());
-			combine_results(arrow, typename).map_first(|(_, t)| t)
+			combine_results(arrow, typename)
+				.map_first(|(_, t)| t)
+				.map_first(Option::Some)
+		} else {
+			This(None)
 		};
 		self.skip_whitespace();
 

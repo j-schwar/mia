@@ -103,7 +103,7 @@ impl Spanning for Program {
 pub struct Function {
 	pub ident: Identifier,
 	pub parameters: Vec<(Identifier, Identifier)>,
-	pub return_type: Identifier,
+	pub return_type: Option<Identifier>,
 	pub body: FunctionBody,
 	span: Span,
 }
@@ -113,7 +113,7 @@ impl Function {
 	pub fn new<B>(
 		ident: Identifier,
 		parameters: Vec<(Identifier, Identifier)>,
-		return_type: Identifier,
+		return_type: Option<Identifier>,
 		body: B,
 		span: Span,
 	) -> Self
