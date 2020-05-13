@@ -1,13 +1,13 @@
 [package]
-name = "mia_syntax"
+name = "syntax"
 authors = ["Jeremy Schwartz <j.schwartz564@icloud.com>"]
 version = "0.0.1-alpha"
 edition = "2018"
 
 [lib]
-name = "mia_syntax"
+name = "syntax"
 
 [dependencies]
-nom = "5.1"
+these = "1.0"
 
 [dev-dependencies]

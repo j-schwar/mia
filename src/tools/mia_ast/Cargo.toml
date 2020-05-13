@@ -6,4 +6,4 @@ edition = "2018"
 
 [dependencies]
 structopt = "0.3"
-mia_syntax = { path = "../../mia_syntax" }
+syntax = { path = "../../syntax" }
