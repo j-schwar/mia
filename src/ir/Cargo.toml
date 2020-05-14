@@ -8,6 +8,7 @@ edition = "2018"
 name = "ir"
 
 [dependencies]
+error = { path = "../error" }
 itertools = "0.9"
 inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "llvm8-0" }
 

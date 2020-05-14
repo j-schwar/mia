@@ -76,7 +76,7 @@ fn main() {
 	let ast_program = match Parser::parse_source(&source) {
 		Ok(program) => program,
 		Err(err) => {
-			println!("  {}: {:?}", "Parse Error".red().bold(), err);
+			println!("{}", error::render_error(&err, &source, &source_filename));
 			exit(1);
 		}
 	};
@@ -124,5 +124,5 @@ fn main() {
 			.write_bitcode_to_path(Path::new(&output_filename));
 	}
 
-	println!("  {}", "Done".green().bold())
+	println!("  {}", "Done".green().bold());
 }

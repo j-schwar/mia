@@ -12,6 +12,7 @@ pub use inkwell::module::Module;
 
 use crate::grammar::*;
 use crate::types::{Native, Type};
+use error::internal_compiler_error;
 use inkwell::builder::Builder;
 use inkwell::types::{BasicType, BasicTypeEnum};
 use inkwell::values::{AnyValue, AnyValueEnum, BasicValueEnum, FunctionValue};
@@ -104,7 +105,7 @@ impl<'ctx> CodeGen<'ctx> {
 			Type::Sum(_) => unimplemented!("sum types are not yet supported"),
 			Type::Product(_) => unimplemented!("product types are not yet supported"),
 			Type::Unit => unimplemented!("the unit type is not net supported"),
-			Type::Infer => panic!("internal compiler error: found infer type marker"),
+			Type::Infer => internal_compiler_error!("found infer type marker"),
 		}
 	}
 }
@@ -172,7 +173,7 @@ impl<'a, 'ctx> FunctionCompiler<'a, 'ctx> {
 				));
 			}
 
-			Undefined => panic!("internal compiler error: undefined term reached"),
+			Undefined => internal_compiler_error!("undefined term reached"),
 		}
 	}
 
@@ -227,7 +228,7 @@ impl<'a, 'ctx> FunctionCompiler<'a, 'ctx> {
 		})
 		.expect("internal compiler error: unable to find match for else_branch");
 		if then_index == else_index {
-			panic!("internal compiler error: then_branch and else_branch are the same");
+			internal_compiler_error!("then_branch and else_branch are the same");
 		}
 		self.codegen.builder.position_at_end(else_block);
 		self.compile_term(&branches[else_index].1);

@@ -1,6 +1,7 @@
 use crate::lex::Keyword;
 use crate::parser::prec_group::PrecedenceGroupParser;
 use crate::*;
+use error::{Error, ErrorClassification};
 use std::iter::Peekable;
 use these::These::{That, These, This};
 
@@ -93,6 +94,43 @@ impl ParseError {
 				ParseError::List(vec)
 			}
 		}
+	}
+}
+
+impl Spanning for ParseError {
+	fn span(&self) -> Span {
+		use ParseError::*;
+		match self {
+			UnexpectedToken { actual, .. } => actual.span,
+			UnexpectedEof => Span::new(0, 0),
+			List(errors) => errors.first().unwrap().span(),
+		}
+	}
+}
+
+impl Error for ParseError {
+	fn classification(&self) -> ErrorClassification {
+		ErrorClassification::Error
+	}
+
+	fn message(&self, source_text: &str) -> String {
+		use ParseError::*;
+		match self {
+			UnexpectedToken {
+				expected_one_of,
+				actual,
+			} => format!(
+				"unexpected token {}, expected one of {:?}",
+				actual.span.substr_in(source_text),
+				expected_one_of
+			),
+			UnexpectedEof => format!("unexpected end-of-file"),
+			List(errors) => errors.first().unwrap().message(source_text),
+		}
+	}
+
+	fn context_span(&self) -> Option<Span> {
+		Some(self.span())
 	}
 }
 

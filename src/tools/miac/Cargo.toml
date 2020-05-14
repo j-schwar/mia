@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 colored = "1.9.3"
+error = { path = "../../error" }
 structopt = "0.3"
 ir = { path = "../../ir" }
 lower_ast = { path = "../../lower_ast" }
