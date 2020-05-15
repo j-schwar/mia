@@ -1,8 +1,9 @@
 [workspace]
 members = [
+  "src/error",
 	"src/ir",
-	"src/syntax",
 	"src/lower_ast",
+	"src/syntax",
 	"src/tools/miac",
 	"src/tools/mia_ast",
 	"src/tools/demo",
